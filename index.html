@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Workbench – Sales Analytics</title>
+  <meta name="description" content="Aplikasi manajemen dan analitik data penjualan modern" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    // Configure Tailwind dark mode
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
+            accent:  { 50:'#f0fdf4',100:'#dcfce7',400:'#4ade80',500:'#22c55e',600:'#16a34a' },
+            amber:   { 50:'#fffbeb',100:'#fef3c7',400:'#fbbf24',500:'#f59e0b',600:'#d97706' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-300">
+
+<!-- ============================================================
+     TOAST NOTIFICATION CONTAINER
+============================================================ -->
+<div id="toastContainer" class="fixed top-4 right-4 z-[100] flex flex-col gap-2" aria-live="polite"></div>
+
+<!-- ============================================================
+     SIDEBAR (Desktop)
+============================================================ -->
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-40 flex flex-col shadow-lg transition-transform duration-300">
+  <!-- Logo -->
+  <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-200 dark:border-gray-800">
+    <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    </div>
+    <span class="text-lg font-bold text-gray-900 dark:text-white">Data Workbench</span>
+  </div>
+  <!-- Nav Links -->
+  <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto" aria-label="Navigasi utama">
+    <a href="#dashboard"  class="nav-link active" data-section="dashboard">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </a>
+    <a href="#data-table" class="nav-link" data-section="data-table">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      Tabel Data
+    </a>
+    <a href="#charts"     class="nav-link" data-section="charts">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      Visualisasi
+    </a>
+    <a href="#import-export" class="nav-link" data-section="import-export">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      Import / Export
+    </a>
+  </nav>
+  <!-- Sidebar Footer -->
+  <div class="px-4 py-4 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+    v1.0.0 &bull; Data Workbench
+  </div>
+</aside>
+
+<!-- Sidebar Overlay (mobile) -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-30 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+<!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+<div class="main-content lg:ml-64 flex flex-col min-h-screen">
+
+  <!-- TOP NAV BAR -->
+  <header class="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-3 shadow-sm">
+    <!-- Mobile menu button -->
+    <button class="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+
+    <h1 class="text-base font-semibold text-gray-900 dark:text-white flex-1" id="pageTitle">Dashboard</h1>
+
+    <!-- Data Mode Toggle -->
+    <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <button id="btnRaw"   class="mode-btn active-mode" onclick="setDataMode('raw')"   aria-pressed="true">Raw</button>
+      <button id="btnClean" class="mode-btn"              onclick="setDataMode('clean')" aria-pressed="false">Clean</button>
+    </div>
+
+    <!-- Dark Mode Toggle -->
+    <button id="darkToggle" onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle dark mode">
+      <svg id="iconSun"  class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      <svg id="iconMoon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+    </button>
+  </header>
+
+  <!-- PAGE CONTENT -->
+  <main class="flex-1 p-4 md:p-6 space-y-8">
+
+    <!-- ============================================================
+         SECTION: DASHBOARD
+    ============================================================ -->
+    <section id="dashboard" class="page-section">
+
+      <!-- Data Quality Report Banner -->
+      <div id="qualityReport" class="hidden mb-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-accent-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Data Quality Report
+          </h2>
+          <span id="qualityScore" class="text-2xl font-bold text-accent-600"></span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" id="qualityStats"></div>
+      </div>
+
+      <!-- Clean Data Button -->
+      <div id="cleanBanner" class="mb-6 flex flex-wrap items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl p-4">
+        <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <p class="text-sm text-amber-800 dark:text-amber-200 flex-1">Data mentah memiliki masalah kualitas. Klik tombol untuk membersihkan secara otomatis.</p>
+        <button onclick="cleanData()" class="btn-primary text-sm" id="btnCleanData">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          Bersihkan Data
+        </button>
+        <button onclick="resetData()" class="btn-secondary text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Reset ke Awal
+        </button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6" id="kpiGrid">
+        <!-- Populated by JS -->
+        <div class="kpi-skeleton col-span-1"></div>
+        <div class="kpi-skeleton col-span-1"></div>
+        <div class="kpi-skeleton col-span-1"></div>
+        <div class="kpi-skeleton col-span-1"></div>
+        <div class="kpi-skeleton col-span-1"></div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         SECTION: DATA TABLE
+    ============================================================ -->
+    <section id="data-table" class="page-section">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+        <!-- Table Header -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+          <div class="flex flex-wrap items-center gap-3 mb-3">
+            <h2 class="text-base font-semibold text-gray-900 dark:text-white flex-1">Tabel Data Penjualan</h2>
+            <button onclick="openAddModal()" class="btn-primary text-sm" aria-label="Tambah data baru">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Tambah Data
+            </button>
+          </div>
+          <!-- Filters Row -->
+          <div class="flex flex-wrap gap-2">
+            <input id="searchInput" type="search" placeholder="Cari data..." class="input-field flex-1 min-w-48 text-sm" oninput="applyFilters()" aria-label="Pencarian global" />
+            <select id="filterRegion"   class="input-field text-sm" onchange="applyFilters()" aria-label="Filter region"><option value="">Semua Region</option></select>
+            <select id="filterKategori" class="input-field text-sm" onchange="applyFilters()" aria-label="Filter kategori"><option value="">Semua Kategori</option></select>
+            <select id="filterMetode"   class="input-field text-sm" onchange="applyFilters()" aria-label="Filter metode pembayaran"><option value="">Semua Metode</option></select>
+          </div>
+        </div>
+
+        <!-- Table wrapper -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="dataTable" aria-label="Tabel data penjualan">
+            <thead class="bg-gray-50 dark:bg-gray-800/60 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              <tr id="tableHead"></tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-gray-100 dark:divide-gray-800"></tbody>
+          </table>
+          <!-- Empty State -->
+          <div id="emptyState" class="hidden py-16 flex flex-col items-center justify-center text-center gap-3">
+            <svg class="w-16 h-16 text-gray-300 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="text-gray-500 dark:text-gray-400 font-medium">Tidak ada data yang cocok</p>
+            <p class="text-gray-400 dark:text-gray-500 text-xs">Coba ubah kata kunci pencarian atau filter yang digunakan</p>
+            <button onclick="clearFilters()" class="btn-secondary text-xs mt-1">Hapus Filter</button>
+          </div>
+          <!-- Loading Skeleton -->
+          <div id="tableSkeleton" class="p-4 space-y-2">
+            <div class="skeleton h-8 w-full rounded"></div>
+            <div class="skeleton h-8 w-full rounded"></div>
+            <div class="skeleton h-8 w-full rounded"></div>
+            <div class="skeleton h-8 w-full rounded"></div>
+            <div class="skeleton h-8 w-full rounded"></div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2 text-sm">
+          <span id="paginationInfo" class="text-gray-500 dark:text-gray-400"></span>
+          <div id="paginationControls" class="flex items-center gap-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: CHARTS / VISUALISASI
+    ============================================================ -->
+    <section id="charts" class="page-section">
+      <!-- Chart Type Switcher (for trend chart) -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Visualisasi Data</h2>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 dark:text-gray-400">Grafik Tren:</span>
+          <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
+            <button class="chart-type-btn active" data-type="line"        onclick="switchMainChartType('line')">Line</button>
+            <button class="chart-type-btn"         data-type="bar"         onclick="switchMainChartType('bar')">Bar</button>
+            <button class="chart-type-btn"         data-type="pie"         onclick="switchMainChartType('pie')">Pie</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Sales Trend (main, switchable) -->
+        <div class="chart-card lg:col-span-2">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Sales Trend per Bulan</h3>
+            <button onclick="downloadChart('chartTrend')" class="icon-btn" aria-label="Download grafik tren">⬇</button>
+          </div>
+          <div class="chart-container-wide"><canvas id="chartTrend"></canvas></div>
+        </div>
+
+        <!-- Revenue per Region -->
+        <div class="chart-card">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Revenue per Region</h3>
+            <button onclick="downloadChart('chartRegion')" class="icon-btn" aria-label="Download grafik region">⬇</button>
+          </div>
+          <div class="chart-container"><canvas id="chartRegion"></canvas></div>
+        </div>
+
+        <!-- Revenue per Kategori -->
+        <div class="chart-card">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Revenue per Kategori</h3>
+            <button onclick="downloadChart('chartKategori')" class="icon-btn" aria-label="Download grafik kategori">⬇</button>
+          </div>
+          <div class="chart-container"><canvas id="chartKategori"></canvas></div>
+        </div>
+
+        <!-- Top 10 Produk -->
+        <div class="chart-card">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Top 10 Produk by Revenue</h3>
+            <button onclick="downloadChart('chartTopProduk')" class="icon-btn" aria-label="Download grafik produk">⬇</button>
+          </div>
+          <div class="chart-container"><canvas id="chartTopProduk"></canvas></div>
+        </div>
+
+        <!-- Diskon vs Penjualan (Scatter) -->
+        <div class="chart-card">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Diskon vs Penjualan (Scatter)</h3>
+            <button onclick="downloadChart('chartScatter')" class="icon-btn" aria-label="Download grafik scatter">⬇</button>
+          </div>
+          <div class="chart-container"><canvas id="chartScatter"></canvas></div>
+        </div>
+
+        <!-- Metode Pembayaran (Pie) -->
+        <div class="chart-card">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Kontribusi Metode Pembayaran</h3>
+            <button onclick="downloadChart('chartMetode')" class="icon-btn" aria-label="Download grafik metode">⬇</button>
+          </div>
+          <div class="chart-container"><canvas id="chartMetode"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: IMPORT / EXPORT
+    ============================================================ -->
+    <section id="import-export" class="page-section">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Import Card -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg>
+            Import Data
+          </h2>
+          <div id="dropzone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-primary-400 transition-colors" onclick="document.getElementById('fileInput').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+            <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Drag & drop atau <span class="text-primary-600 font-medium">klik untuk upload</span></p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Mendukung CSV dan JSON</p>
+            <input type="file" id="fileInput" accept=".csv,.json" class="hidden" onchange="handleFileImport(event)" aria-label="Upload file CSV atau JSON" />
+          </div>
+          <!-- Import Preview -->
+          <div id="importPreview" class="hidden mt-4">
+            <h3 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Preview (5 baris pertama)</h3>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table class="w-full text-xs" id="previewTable">
+                <thead class="bg-gray-50 dark:bg-gray-800" id="previewHead"></thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700" id="previewBody"></tbody>
+              </table>
+            </div>
+            <div id="importValidation" class="mt-2 text-xs text-gray-500 dark:text-gray-400"></div>
+            <button onclick="confirmImport()" class="btn-primary text-sm mt-3 w-full" id="btnConfirmImport">Import Data Ini</button>
+          </div>
+        </div>
+
+        <!-- Export Card -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-accent-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            Export Data
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Export data yang sedang aktif (sesuai filter)</p>
+          <div class="space-y-3">
+            <button onclick="exportCSV()" class="flex items-center gap-3 w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium">
+              <div class="w-8 h-8 bg-accent-100 dark:bg-accent-900/30 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              </div>
+              <div class="text-left">
+                <p class="text-gray-800 dark:text-gray-100">Export ke CSV</p>
+                <p class="text-xs text-gray-400">Spreadsheet compatible</p>
+              </div>
+            </button>
+            <button onclick="exportJSON()" class="flex items-center gap-3 w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium">
+              <div class="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              </div>
+              <div class="text-left">
+                <p class="text-gray-800 dark:text-gray-100">Export ke JSON</p>
+                <p class="text-xs text-gray-400">API / developer friendly</p>
+              </div>
+            </button>
+          </div>
+          <div id="exportInfo" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs text-gray-500 dark:text-gray-400"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="text-center py-4 text-xs text-gray-400 dark:text-gray-600 border-t border-gray-200 dark:border-gray-800 mt-4">
+    Data Workbench &copy; 2024 &bull; Dibuat dengan HTML, Tailwind CSS & Chart.js
+  </footer>
+</div><!-- /main-content -->
+
+<!-- ============================================================
+     MODAL: ADD / EDIT DATA
+============================================================ -->
+<div id="crudModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box" role="document">
+    <div class="flex items-center justify-between mb-5">
+      <h2 id="modalTitle" class="text-lg font-semibold text-gray-900 dark:text-white">Tambah Data</h2>
+      <button onclick="closeModal('crudModal')" class="icon-btn-lg" aria-label="Tutup modal">&times;</button>
+    </div>
+    <form id="crudForm" onsubmit="submitCRUD(event)" novalidate>
+      <input type="hidden" id="formId" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div class="form-group">
+          <label for="formTanggal" class="form-label">Tanggal <span aria-hidden="true" class="text-red-500">*</span></label>
+          <input type="date" id="formTanggal" class="input-field" required aria-required="true" />
+          <span class="form-error hidden" id="errTanggal">Tanggal wajib diisi</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formProduk" class="form-label">Produk <span aria-hidden="true" class="text-red-500">*</span></label>
+          <input type="text" id="formProduk" class="input-field" placeholder="Nama produk" required aria-required="true" />
+          <span class="form-error hidden" id="errProduk">Produk wajib diisi</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formKategori" class="form-label">Kategori <span aria-hidden="true" class="text-red-500">*</span></label>
+          <select id="formKategori" class="input-field" required aria-required="true">
+            <option value="">Pilih Kategori</option>
+            <option>Elektronik</option><option>Aksesoris</option><option>Komponen</option>
+            <option>Periferal</option><option>Jaringan</option><option>Furnitur</option>
+          </select>
+          <span class="form-error hidden" id="errKategori">Kategori wajib dipilih</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formRegion" class="form-label">Region <span aria-hidden="true" class="text-red-500">*</span></label>
+          <select id="formRegion" class="input-field" required aria-required="true">
+            <option value="">Pilih Region</option>
+            <option>Jakarta</option><option>Surabaya</option><option>Bandung</option>
+            <option>Medan</option><option>Semarang</option><option>Yogyakarta</option><option>Makassar</option>
+          </select>
+          <span class="form-error hidden" id="errRegion">Region wajib dipilih</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formSalesRep" class="form-label">Sales Rep <span aria-hidden="true" class="text-red-500">*</span></label>
+          <input type="text" id="formSalesRep" class="input-field" placeholder="Nama sales" required aria-required="true" />
+          <span class="form-error hidden" id="errSalesRep">Sales rep wajib diisi</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formMetode" class="form-label">Metode Pembayaran <span aria-hidden="true" class="text-red-500">*</span></label>
+          <select id="formMetode" class="input-field" required aria-required="true">
+            <option value="">Pilih Metode</option>
+            <option>Transfer</option><option>Kartu Kredit</option><option>Kartu Debit</option><option>Cicilan</option>
+          </select>
+          <span class="form-error hidden" id="errMetode">Metode wajib dipilih</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formJumlah" class="form-label">Jumlah <span aria-hidden="true" class="text-red-500">*</span></label>
+          <input type="number" id="formJumlah" class="input-field" placeholder="0" min="1" required aria-required="true" />
+          <span class="form-error hidden" id="errJumlah">Jumlah harus angka positif</span>
+        </div>
+
+        <div class="form-group">
+          <label for="formHarga" class="form-label">Harga (Rp) <span aria-hidden="true" class="text-red-500">*</span></label>
+          <input type="number" id="formHarga" class="input-field" placeholder="0" min="1" required aria-required="true" />
+          <span class="form-error hidden" id="errHarga">Harga harus angka positif</span>
+        </div>
+
+        <div class="form-group sm:col-span-2">
+          <label for="formDiskon" class="form-label">Diskon (0–1) <span aria-hidden="true" class="text-red-500">*</span></label>
+          <input type="number" id="formDiskon" class="input-field" placeholder="0.0" min="0" max="1" step="0.01" required aria-required="true" />
+          <span class="form-error hidden" id="errDiskon">Diskon antara 0.0 hingga 1.0</span>
+        </div>
+
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button type="button" onclick="closeModal('crudModal')" class="btn-secondary flex-1">Batal</button>
+        <button type="submit" class="btn-primary flex-1" id="btnSubmitCRUD">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: CONFIRM DELETE
+============================================================ -->
+<div id="deleteModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div class="modal-box max-w-sm">
+    <div class="text-center">
+      <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </div>
+      <h2 id="deleteModalTitle" class="text-base font-semibold text-gray-900 dark:text-white mb-2">Hapus Data</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.</p>
+      <div class="flex gap-3">
+        <button onclick="closeModal('deleteModal')" class="btn-secondary flex-1">Batal</button>
+        <button onclick="confirmDelete()" class="btn-danger flex-1">Hapus</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     AI DATA ASSISTANT – Floating Button + Chat Panel
+============================================================ -->
+
+<!-- FAB: Floating Action Button -->
+<button
+  id="asstFab"
+  onclick="toggleAssistant()"
+  class="asst-fab"
+  aria-label="Buka AI Data Assistant"
+  aria-expanded="false"
+  aria-controls="asstPanel"
+  title="AI Data Assistant"
+>
+  <span class="asst-fab-icon">💬</span>
+  <span class="asst-fab-pulse"></span>
+</button>
+
+<!-- Chat Panel -->
+<aside
+  id="asstPanel"
+  class="asst-panel asst-hidden"
+  role="complementary"
+  aria-label="AI Data Assistant"
+>
+  <!-- Panel Header -->
+  <div class="asst-header">
+    <div class="asst-header-left">
+      <div class="asst-avatar-sm">🤖</div>
+      <div>
+        <p class="asst-header-title">Data Assistant</p>
+        <p class="asst-header-sub" id="asstStatusText">Siap membantu</p>
+      </div>
+    </div>
+    <div class="asst-header-actions">
+      <span id="asstModeLabel" class="asst-mode-label asst-mode-rule" title="Mode aktif">⚙️ Rule</span>
+      <button onclick="toggleAsstSettings()" class="asst-icon-btn" aria-label="Pengaturan Assistant" title="Pengaturan">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button onclick="clearAsstHistory()" class="asst-icon-btn" aria-label="Hapus riwayat chat" title="Hapus Riwayat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+      <button onclick="toggleAssistant()" class="asst-icon-btn" aria-label="Tutup panel" title="Tutup">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Panel (hidden by default) -->
+  <div id="asstSettingsPanel" class="asst-settings hidden">
+    <p class="asst-settings-title">⚙️ Pengaturan AI Mode</p>
+    <label for="asstApiKeyInput" class="asst-settings-label">
+      API Key Gemini
+      <span class="asst-settings-hint">(disimpan di localStorage, tidak dikirim ke server lain)</span>
+    </label>
+    <input
+      type="password"
+      id="asstApiKeyInput"
+      class="asst-settings-input"
+      placeholder="AIza..."
+      autocomplete="off"
+      aria-label="Gemini API Key"
+    />
+    <label class="asst-settings-row" for="asstAiModeToggle">
+      <span>Aktifkan AI Mode (Gemini)</span>
+      <input type="checkbox" id="asstAiModeToggle" class="asst-toggle" aria-label="Aktifkan AI Mode" />
+    </label>
+    <p class="asst-settings-hint">Dapatkan API key gratis di <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="asst-link">Google AI Studio</a>. Jika API gagal, sistem otomatis fallback ke mode aturan.</p>
+    <button onclick="saveAsstSettings()" class="asst-save-btn">Simpan</button>
+  </div>
+
+  <!-- Messages Container -->
+  <div id="asstMessages" class="asst-messages" role="log" aria-live="polite" aria-label="Percakapan dengan Data Assistant"></div>
+
+  <!-- Input Area -->
+  <div class="asst-input-area">
+    <input
+      type="text"
+      id="asstInput"
+      class="asst-input"
+      placeholder="Tanya tentang data…"
+      onkeydown="handleAsstKeydown(event)"
+      aria-label="Ketik pertanyaan untuk Data Assistant"
+      maxlength="300"
+      autocomplete="off"
+    />
+    <button
+      onclick="sendMessage('', false)"
+      class="asst-send-btn"
+      aria-label="Kirim pesan"
+      title="Kirim (Enter)"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</aside>
+
+<!-- Main Script -->
+<script src="script.js"></script>
+<!-- AI Assistant Script -->
+<script src="assistant.js"></script>
+</body>
+</html>
